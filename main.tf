@@ -1,42 +1,42 @@
-# rédiger le code d'infra principal
 locals {
-  base_name = "${var.project}-${var.environnement}"
-  case_sensitive_base_name = lower(replace(local.base_name, "-", ""))
-  case_sensitive_unique_base_name = lower(replace("${local.base_name}${random_string.storage_account_suffix.result}", "-", ""))
-
+  base_name = "${var.project}-${var.environment}"
 }
 
-# resource "type d'indentifiant" "identifiant" {}
-resource "azurerm_log_analytics_workspace" "main" {
-  # convention de nommage : préfixe-projet-environnement
-  name                = "log-${local.base_name}"
-  resource_group_name = data.azurerm_resource_group.main.name
-  location            = data.azurerm_resource_group.main.location
-  sku                 = "PerGB2018"
-  retention_in_days   = 30
-}
-
-resource random_string "storage_account_suffix" {
-  length = 6
+# key vault creation
+resource "random_string" "kv_name" {
+  length  = 6
+  lower   = true
+  upper   = false
+  numeric = true
   special = false
-  upper = false
-  numeric = false
 }
 
-resource "azurerm_storage_account" "main" {
-  name                     = "st${local.case_sensitive_unique_base_name}"
-  resource_group_name      = data.azurerm_resource_group.main.name
-  location                 = data.azurerm_resource_group.main.location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
+resource "azurerm_key_vault" "main" {
+  name                        = "kv-${local.base_name}-${random_string.kv_name.result}"
+  location                    = data.azurerm_resource_group.main.location
+  resource_group_name         = data.azurerm_resource_group.main.name
+  enabled_for_disk_encryption = true
+  tenant_id                   = data.azurerm_client_config.current.tenant_id
+  soft_delete_retention_days  = 7
+  purge_protection_enabled    = false
+  sku_name                    = "standard"
+  enable_rbac_authorization   = true
 }
 
-# pour créer plusieurs fois la même resource avec un id unique
-# resource "azurerm_storage_account" "main" {
-#   count = 3
-#   name                     = "st${local.case_sensitive_unique_base_name}${count.index}"
-#   resource_group_name      = data.azurerm_resource_group.main.name
-#   location                 = data.azurerm_resource_group.main.location
-#   account_tier             = "Standard"
-#   account_replication_type = "LRS"
-# }
+resource "azurerm_role_assignment" "kv_secrets_admin" {
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Secrets Officer"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
+resource "azurerm_role_assignment" "kv_keys_admin" {
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Crypto Officer"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
+resource "azurerm_role_assignment" "kv_certs_admin" {
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Certificates Officer"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
