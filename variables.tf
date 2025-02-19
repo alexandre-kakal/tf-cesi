@@ -5,3 +5,13 @@ variable "subscription_id" {
   type = string
   sensitive = true
 }
+
+variable "project" {
+  description = "The project name"
+  type = string
+}
+
+variable "environnement" {
+  description = "The deployement environnement"
+  type = string
+}
