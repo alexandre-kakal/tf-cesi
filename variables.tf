@@ -21,14 +21,19 @@ variable "resource_group_name" {
   type = string
 }
 
-variable "key_permissions" {
-  type        = list(string)
-  description = "List of key permissions."
-  default     = ["List", "Create", "Delete", "Get", "Purge", "Recover", "Update", "GetRotationPolicy", "SetRotationPolicy"]
+variable "mssql_login" {
+  description = "SQL Server admin login"
+  type        = string
+  sensitive   = true
 }
 
-variable "secret_permissions" {
-  type        = list(string)
-  description = "List of secret permissions."
-  default     = ["Set"]
+variable "rabbitmq_login" {
+  description = "RabbitMQ admin login"
+  type        = string
+  sensitive   = true
+}
+
+variable "acr_name" {
+  description = "Azure Container Registry name"
+  type        = string
 }
